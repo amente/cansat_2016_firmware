@@ -8,27 +8,28 @@ class TelemetryPacket
 {
 public:
   TelemetryPacket();  // default constructor
-  void setMissionTime(int16_t missionTime); 
-  void setAltitude(int16_t altitude);
-  void setPressure(int16_t pressure);
-  void setAirSpeed(int16_t airSpeed);
-  void setTemperature(int16_t temperature);
-  void setVoltage(int16_t voltage);
+  void setMissionTimeMs(int16_t missionTime); 
+  void setAltitudeMeters(float altitude);
+  void setPressurePascals(float pressure);
+  void setAirSpeedKnots(float airSpeed);
+  void setTemperatureCelcius(float temperature);
+  void setVoltageVolts(float voltage);
   void setGPSData(GPSData gps);
   void setPacketCount(int16_t packetCount);
+  int toBinary(uint8_t* binaryBuffer);
+  int toCsv(uint8_t* csvBuffer);
 
 private:
   int16_t _teamId;
   int16_t _missionTime;
-  int16_t _altitude;
-  int16_t _pressure;
-  int16_t _airSpeed;
-  int16_t _temperature;
-  int16_t _voltage;
+  float _altitude;
+  float _pressure;
+  float _airSpeed;
+  float _temperature;
+  float _voltage;
   GPSData _gps;
   int16_t _packetCount;
   int16_t _packetType;
-  int16_t _size;
 };
 
 

@@ -1,7 +1,6 @@
 #include "Debugger.h"
 
 Debugger::Debugger() {
-	
 }
 
 bool Debugger::init() {
@@ -62,7 +61,16 @@ void Debugger::debugSendPacket(XBeeSendPacket pkt) {
 
 }
 
-void Debugger::print(char* str)
-{
-  DEBUG_SERIAL.print(str);
-}
+ void Debugger::debugIncomingPacket(XBeeIncomingPacket* incomingPacket)
+ {
+   DEBUG_SERIAL.print("debugIncomingPacket -> Frame Type: ");
+    DEBUG_SERIAL.print(incomingPacket -> getFrameType(), HEX);
+    DEBUG_SERIAL.print("  Data Length: ");
+    DEBUG_SERIAL.print(incomingPacket -> getPacketDataLength());
+    DEBUG_SERIAL.print("  Data: ");
+    for(int i=0; i < incomingPacket -> getPacketDataLength(); i++)
+    {
+       DEBUG_SERIAL.print(incomingPacket -> getPacketDataByte(i), HEX);
+    } 
+    DEBUG_SERIAL.print("\n"); 
+ }

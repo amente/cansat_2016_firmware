@@ -5,8 +5,8 @@
 
 #include <Arduino.h>
 
-#define DEBUG_SERIAL  Serial
 #define DEBUG_SERIAL_BAUD_RATE  9600
+#define DEBUG_SERIAL Serial
 
 class Debugger
 {
@@ -14,10 +14,11 @@ class Debugger
 	  Debugger();  // default constructor
 	  bool init(); // Initialize XBee
 	  void debugSendPacket(XBeeSendPacket sendPacket);
+	  void debugIncomingPacket(XBeeIncomingPacket* incomingPacket);
 	  void print(char* str);
 
 	private:
-		// TODO: Implementations
+		
 };
 
 

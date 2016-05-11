@@ -66,6 +66,72 @@ void XBee::send(XBeeSendPacket sendPacket) {
 
 }
 
+/*
+* Reads bytes of data from the xbee serial port and contructs the incoming packet if necessary
+*/
+void XBee::receive(XBeeIncomingPacket* incomingPacket) {
+
+	//Avoid overwriting a packet that was ready and not yet consumed
+	if(!incomingPacket -> isConsumed())
+	{
+		return;
+	}
+
+	int numIncomingBytes = XBEE_SERIAL.available();
+	if( numIncomingBytes > 0)
+	{
+		while(numIncomingBytes > 0)
+		{
+			uint8_t incomingByte = XBEE_SERIAL.read();
+
+			if(_frameParsingHasStarted)
+			{
+
+			    if(_incomingPacketFrameIndex > 0 && _incomingPacketFrameIndex <= 2)
+				{
+					// Expects the high and low length bytes
+					incomingPacket -> setPacketLengthByte(incomingByte, _incomingPacketFrameIndex - 1);
+				}
+				else if(_incomingPacketFrameIndex == 3)
+				{
+					//Expects the frame type
+					incomingPacket -> setFrameType(incomingByte);
+				}
+				else if( (_incomingPacketFrameIndex - 3) <= incomingPacket -> getPacketDataLength() )
+				{
+					//Everything else upto the packet data length is considered packet data
+					incomingPacket -> setPacketDataByte(incomingByte, _incomingPacketFrameIndex - 4);
+				}
+				else
+				{
+					//Expect the checksum byte
+					incomingPacket -> verifyChecksum(incomingByte);
+				    incomingPacket -> setConsumedFlag(false);
+
+				    //Reset the frame index and return
+				    _incomingPacketFrameIndex = 0;
+				    _frameParsingHasStarted = false;
+				    return;
+				}
+				_incomingPacketFrameIndex ++;
+
+			}
+			else if(incomingByte == XBEE_PACKET_START_DELIMITER)
+			{
+				//Expect the start delimiter for a frame. 
+				_frameParsingHasStarted = true;
+				_incomingPacketFrameIndex = 1;
+			}
+			else
+			{
+				//Skip other bytes
+			}
+		
+			numIncomingBytes--;
+		}
+	}
+}
+
 XBeeSendPacket::XBeeSendPacket(uint8_t* data, int16_t dataLength) {
 
 	_startDelimiter = XBEE_PACKET_START_DELIMITER;
@@ -179,4 +245,55 @@ uint8_t XBeeSendPacket::calculateChecksum(){
   
   	sum &= 0xFF;
   	return 0xFF - sum; 
+}
+
+XBeeIncomingPacket::XBeeIncomingPacket() {
+	
+}
+
+uint8_t XBeeIncomingPacket::getFrameType() {
+	return _frameType;
+}
+
+void XBeeIncomingPacket::setFrameType(uint8_t frameType) {
+	_frameType = frameType;
+}
+
+
+void XBeeIncomingPacket::setPacketLengthByte(uint8_t value, int16_t bytePos) {
+	_packetLength[bytePos] = value;
+}
+
+uint16_t XBeeIncomingPacket::getPacketDataLength() {
+	return (_packetLength[1] | _packetLength[0] << 8) - 1; // MSB first and Doesn't count the frame type byte
+}
+
+void XBeeIncomingPacket::setPacketDataByte(uint8_t value, int16_t bytePos) {
+	_packetData[bytePos] = value;
+}
+
+uint8_t XBeeIncomingPacket::getPacketDataByte(int16_t bytePos) {
+	if(bytePos < 0 || bytePos >= XBEE_INCOMING_PACKET_MAX_DATA_SIZE)
+	{
+		return 0xBB;
+	}
+	return _packetData[bytePos];
+}
+
+void XBeeIncomingPacket::setConsumedFlag(bool consumed) {
+	_consumed = consumed;
+}
+
+bool XBeeIncomingPacket::isConsumed() {
+	return _consumed;
+}
+
+void XBeeIncomingPacket::verifyChecksum(uint8_t checksumByte) {
+	//TODO: Implement
+
+	_valid = true;
+}
+
+bool XBeeIncomingPacket::isValid() {
+	return _valid;
 }

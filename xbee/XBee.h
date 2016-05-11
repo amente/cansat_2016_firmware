@@ -27,6 +27,9 @@
 #define XBEE_PACKET_BROADCAST_RADIUS 0x00
 #define XBEE_PACKET_OPTIONS 0x00
 
+#define XBEE_INCOMING_PACKET_MAX_DATA_SIZE 20
+
+#define XBEE_RECEIVE_PACKET_FRAME_TYPE 0x90
 
 class XBeeSendPacket
 {
@@ -61,6 +64,34 @@ class XBeeSendPacket
 		uint8_t _checksum;
 };
 
+class XBeeIncomingPacket
+{
+	public:
+		XBeeIncomingPacket();
+		uint8_t getFrameType();
+
+		void setFrameType(uint8_t frameType);
+
+		void setPacketLengthByte(uint8_t value, int16_t bytePos);
+
+        uint16_t getPacketDataLength();
+		uint8_t getPacketDataByte(int16_t bytePos);
+		void setPacketDataByte(uint8_t value, int16_t bytePos);
+
+		void setConsumedFlag(bool consumed);
+		bool isConsumed();
+
+		void verifyChecksum(uint8_t checksumByte);
+		bool isValid();
+		
+	private:
+		uint8_t _packetLength[2];
+		uint8_t _frameType;
+		uint8_t _packetData[XBEE_INCOMING_PACKET_MAX_DATA_SIZE];
+		bool _consumed;
+		bool _valid;
+};
+
 
 class XBee
 {
@@ -68,10 +99,17 @@ public:
   XBee();  // default constructor
   bool init(); // Initialize XBee
   void send(XBeeSendPacket sendPacket);
+  void receive(XBeeIncomingPacket* incomingPacket);
 
 private:
 	// TODO: Implementations
+	uint16_t _frameParsingHasStarted;
+	uint16_t _incomingPacketFrameIndex;
 };
+
+
+
+
 
 #endif
 

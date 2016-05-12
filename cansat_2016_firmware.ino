@@ -5,9 +5,15 @@
 #include "xbee/Xbee.h"
 #include "debugger/Debugger.h"
 #include "packet/TelemetryPacket.h"
+#include "camera/Camera.h"
+#include "packet/ImagePacket.h"
+#include "command/CommandProcessor.h"
 
-#define DEBUG_TELEMETRY
+//#define DEBUG_TELEMETRY
 #define DEBUG_INCOMING_PACKET
+#define DEBUG_CAMERA_TAKE_PICTURE
+#define DEBUG_GROUND_STATION_COMMAND
+#define DEBUG_RESET_CAMERA
 
 
 #define TELEMETRY_DATA_CSV_BUF_SIZE   200
@@ -29,6 +35,18 @@ IntervalTimer xbeeDataReceiveTimer; //Used for receiving data from XBee
 TelemetryPacket telemetryPacket = TelemetryPacket();
 
 XBeeIncomingPacket incomingPacket = XBeeIncomingPacket();
+XBeeOutgoingPacket outgoingPacket = XBeeOutgoingPacket();
+
+Camera camera = Camera();
+ImagePacket imagePacket = ImagePacket();
+
+CommandProcessor commandProcessor;
+
+bool outgoingPacketIsSent = false;
+bool hasIncomingPacket = false;
+bool hasGroundStationCommand = false;
+
+uint8_t groundStationCommand = 0x00;
 
 /**
  * sendTelemetry
@@ -37,12 +55,19 @@ XBeeIncomingPacket incomingPacket = XBeeIncomingPacket();
 void sendTelemetry()
 {
   int telemetryDataCsvSize = telemetryPacket.toCsv(telemetryDataCsvBuffer); 
-  XBeeSendPacket pkt = XBeeSendPacket(telemetryDataCsvBuffer, telemetryDataCsvSize);
-  xbee.send(pkt);
+  outgoingPacket.prepare(telemetryDataCsvBuffer,telemetryDataCsvSize); 
+  xbee.send(outgoingPacket);
+  outgoingPacketIsSent = true;
+}
 
-  #ifdef DEBUG_TELEMETRY
-    debugger.debugSendPacket(pkt);
+void actionAfterOutgoingPacketIsSent()
+{
+  #ifdef DEBUG_OUTGOING_PACKET
+    debugger.debugOutgoingPacket(&outgoingPacket);
   #endif
+  noInterrupts();
+  outgoingPacketIsSent = false;
+  interrupts();
 }
 
 /**
@@ -64,27 +89,68 @@ void processIncomingPacket()
 
     if(incomingPacket.getFrameType() == XBEE_RECEIVE_PACKET_FRAME_TYPE)
     {
-      //Incoming packet is transmitted by the ground station     
+      //Incoming packet is transmitted by the ground station 
+      //Only expect one byte command
+      groundStationCommand = incomingPacket.getPacketDataByte(11);
+      hasGroundStationCommand = true;    
     }
 
     //Mark the packet as consumed
     incomingPacket.setConsumedFlag(true);
 }
 
+void processGroundStationCommand()
+{
+  #ifdef DEBUG_GROUND_STATION_COMMAND
+   debugger.debugGroundStationCommand(groundStationCommand);
+  #endif
+  
+  commandProcessor.processForCommand(groundStationCommand);
+  hasGroundStationCommand = false;
+}
+
+void takeImageCommandHandler()
+{
+  bool takePictureIsSuccess = camera.takePicture();
+  
+  #ifdef DEBUG_CAMERA_TAKE_PICTURE
+    debugger.debugTakeImage(&camera, takePictureIsSuccess);
+  #endif 
+}
+
+void resetCameraCommandHandler()
+{
+  #ifdef DEBUG_RESET_CAMERA
+    debugger.debugResetCamera();
+  #endif
+  camera.resetCamera();
+}
+
 void setup() {
   //Initialize modules and sensors
-  xbee.init();
+  //Initialize debugger
   debugger.init();
-  Serial.begin(9600);
+  
+  //Initialize XBee
+  xbee.init();
+  
+  //Initialize camera
+  camera.resetCamera();
+  delay(1000);
+  camera.init();
+  delay(3000);
 
+
+  //Initialize ground station command handlers
+  commandProcessor.setTakeImageHandler(takeImageCommandHandler);
+  commandProcessor.setResetCameraHandler(resetCameraCommandHandler);
+  
   //Enable timed tasks
   telemetrySendTimer.begin(sendTelemetry, TELEMETRY_SEND_INTERVAL_MICROS); 
   xbeeDataReceiveTimer.begin(receiveIncomingPacket, XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS); 
+
+   Serial.begin(9600);
 }
-
-bool hasIncomingPacket = false;
-
-
 
 void loop() {
   //This part of the code will run repeatedely
@@ -92,9 +158,19 @@ void loop() {
   hasIncomingPacket = !incomingPacket.isConsumed(); //TODO: Fix the 'not' logic to make this more readable
   interrupts();
 
+  if(outgoingPacketIsSent)
+  {
+    actionAfterOutgoingPacketIsSent();
+  }
+
   if(hasIncomingPacket)
   {
     processIncomingPacket();
+  }
+  
+  if(hasGroundStationCommand)
+  {
+    processGroundStationCommand();
   }
   
   delay(1000);

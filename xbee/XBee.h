@@ -31,10 +31,11 @@
 
 #define XBEE_RECEIVE_PACKET_FRAME_TYPE 0x90
 
-class XBeeSendPacket
+class XBeeOutgoingPacket
 {
 	public:
-		XBeeSendPacket(uint8_t* data, int16_t dataLength);
+		XBeeOutgoingPacket();
+		void prepare(uint8_t* data, int16_t dataLength);
 		uint8_t getStartDelimiter();
 		uint8_t* getLength();
 		uint8_t getFrameType();
@@ -98,7 +99,7 @@ class XBee
 public:
   XBee();  // default constructor
   bool init(); // Initialize XBee
-  void send(XBeeSendPacket sendPacket);
+  void send(XBeeOutgoingPacket sendPacket);
   void receive(XBeeIncomingPacket* incomingPacket);
 
 private:

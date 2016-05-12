@@ -9,7 +9,7 @@ bool Debugger::init() {
 }
 
 
-void Debugger::debugSendPacket(XBeeSendPacket pkt) {
+void Debugger::debugOutgoingPacket(XBeeOutgoingPacket pkt) {
 
   DEBUG_SERIAL.print("debugSendPacket -> ");
 
@@ -74,3 +74,30 @@ void Debugger::debugSendPacket(XBeeSendPacket pkt) {
     } 
     DEBUG_SERIAL.print("\n"); 
  }
+
+void Debugger::debugResetCamera()
+{
+  DEBUG_SERIAL.println("Reseting camera .. ");
+}
+
+void Debugger::debugTakeImage(Camera* camera, bool takePictureIsSuccess)
+{
+  if(takePictureIsSuccess)
+    {
+      DEBUG_SERIAL.print("Picture taken sucessully. ");
+      DEBUG_SERIAL.print("Size: ");
+      uint16_t frameLength = camera -> getUnconsumedFrameLength();
+      DEBUG_SERIAL.print(frameLength);
+      DEBUG_SERIAL.println(" Bytes");
+   }
+    else
+    {
+      DEBUG_SERIAL.println("Picture not taken.");
+    } 
+}
+
+void Debugger::debugGroundStationCommand(uint8_t groundStationCommand)
+{
+   DEBUG_SERIAL.print("Ground station command: ");
+   DEBUG_SERIAL.println(groundStationCommand, HEX);
+}

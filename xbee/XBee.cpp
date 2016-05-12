@@ -10,7 +10,7 @@ bool XBee::init() {
 	return true;
 }
 
-void XBee::send(XBeeSendPacket sendPacket) {
+void XBee::send(XBeeOutgoingPacket sendPacket) {
 
 	//Construct and write XBEE TXRequest API Frame 
 	// Eg: 7E 00 13 10 01 00 13 A2 00 40 E3 5F 87 FF FE 00 00 48 65 6C 6C 6F 3F
@@ -132,7 +132,7 @@ void XBee::receive(XBeeIncomingPacket* incomingPacket) {
 	}
 }
 
-XBeeSendPacket::XBeeSendPacket(uint8_t* data, int16_t dataLength) {
+XBeeOutgoingPacket::XBeeOutgoingPacket() {
 
 	_startDelimiter = XBEE_PACKET_START_DELIMITER;
 
@@ -156,7 +156,9 @@ XBeeSendPacket::XBeeSendPacket(uint8_t* data, int16_t dataLength) {
 	_destAddrLow[2] = XBEE_DEST_ADDR_LOW_HL;
 	_destAddrLow[3] = XBEE_DEST_ADDR_LOW_HH;
 	
+}
 
+void XBeeOutgoingPacket::prepare(uint8_t* data, int16_t dataLength) {
 	_data = data;
 	_dataLength = dataLength;
 
@@ -165,59 +167,58 @@ XBeeSendPacket::XBeeSendPacket(uint8_t* data, int16_t dataLength) {
 	_length[1] = (lengthWithData & 0xFF00) >> 8;
 
 	_checksum = calculateChecksum();
-
 }
 
-uint8_t XBeeSendPacket::getStartDelimiter() {
+uint8_t XBeeOutgoingPacket::getStartDelimiter() {
 	return _startDelimiter;
 }
 
-uint8_t* XBeeSendPacket::getLength() {
+uint8_t* XBeeOutgoingPacket::getLength() {
 	
 	return _length;
 }
 
-uint8_t XBeeSendPacket::getFrameType() {
+uint8_t XBeeOutgoingPacket::getFrameType() {
 	return _frameType;
 }
 
-uint8_t XBeeSendPacket::getFrameId() {
+uint8_t XBeeOutgoingPacket::getFrameId() {
 	return _frameId;
 }
 
-uint8_t* XBeeSendPacket::getDestAddrHigh() {
+uint8_t* XBeeOutgoingPacket::getDestAddrHigh() {
 	return _destAddrHigh;
 }
 
-uint8_t* XBeeSendPacket::getDestAddrLow() {
+uint8_t* XBeeOutgoingPacket::getDestAddrLow() {
 	return _destAddrLow;
 }
 
-uint8_t XBeeSendPacket::getBroadCastRadius() {
+uint8_t XBeeOutgoingPacket::getBroadCastRadius() {
 	return _broadCastRadius;
 }
 
-uint8_t* XBeeSendPacket::get16BitDestAddress() {
+uint8_t* XBeeOutgoingPacket::get16BitDestAddress() {
 	return _16BitAddress;
 }
 
-uint8_t XBeeSendPacket::getOptions() {
+uint8_t XBeeOutgoingPacket::getOptions() {
 	return _options;
 }
 
-uint8_t* XBeeSendPacket::getData() {
+uint8_t* XBeeOutgoingPacket::getData() {
 	return _data;
 }
 
-int16_t XBeeSendPacket::getDataLength() {
+int16_t XBeeOutgoingPacket::getDataLength() {
 	return _dataLength;
 }
 
-uint8_t XBeeSendPacket::getChecksum() {
+uint8_t XBeeOutgoingPacket::getChecksum() {
 	return _checksum;
 }
 
-uint8_t XBeeSendPacket::calculateChecksum(){
+uint8_t XBeeOutgoingPacket::calculateChecksum(){
 	// TODO: Implement
 	int sum = 0;
 
@@ -248,7 +249,7 @@ uint8_t XBeeSendPacket::calculateChecksum(){
 }
 
 XBeeIncomingPacket::XBeeIncomingPacket() {
-	
+	_consumed = true;
 }
 
 uint8_t XBeeIncomingPacket::getFrameType() {
@@ -275,6 +276,7 @@ void XBeeIncomingPacket::setPacketDataByte(uint8_t value, int16_t bytePos) {
 uint8_t XBeeIncomingPacket::getPacketDataByte(int16_t bytePos) {
 	if(bytePos < 0 || bytePos >= XBEE_INCOMING_PACKET_MAX_DATA_SIZE)
 	{
+		//TODO: What to do in this case??
 		return 0xBB;
 	}
 	return _packetData[bytePos];

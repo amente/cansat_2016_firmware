@@ -1,0 +1,28 @@
+#ifndef _IMAGE_PACKET
+#define _IMAGE_PACKET
+
+#include <inttypes.h>
+
+#define IMAGE_PACKET_DATA_SIZE 80
+
+
+class ImagePacket
+{
+public:
+	ImagePacket();
+
+	void incSeqNumber();
+	int16_t getSeqNumber();
+
+	void setImageDataLength(uint8_t imageDataLength);
+	void setImageDataByte(uint8_t value, int16_t bytePos);
+	uint8_t getImageDataByte(int16_t bytePos);
+
+private:
+	uint8_t _imageDataLength;
+	uint8_t _imageData[IMAGE_PACKET_DATA_SIZE];
+	int16_t _seqNumber;
+};
+
+
+#endif

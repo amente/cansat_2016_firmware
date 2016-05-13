@@ -16,6 +16,7 @@ public:
 	bool takePicture();
 	void resetCamera();
 	bool readPictureChunk(ImagePacket* imagePacket);
+	bool isPictureConsumed();
 	uint16_t getUnconsumedFrameLength();
 
 private:

@@ -4,6 +4,8 @@
 #include <inttypes.h>
 #include "../gps/GPSData.h"
 
+#define TEAM_ID 6825
+
 class TelemetryPacket
 {
 public:

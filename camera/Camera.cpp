@@ -26,6 +26,7 @@ bool Camera::takePicture() {
 	{
 		_pictureIsTaken = true;
 		_unConsumedFrameLength = adafruitCam.frameLength();
+		_pictureIsConsumed = false;
 	}
 
 	return takePictureIsSuccess;
@@ -55,17 +56,23 @@ bool Camera::readPictureChunk(ImagePacket* imagePacket) {
 		imagePacket -> setImageDataByte(cameraImageBuffer[j], j);
 	}
 
+	imagePacket -> setImageDataLength(bytesToRead);
+
+	imagePacket -> incSeqNumber();
+
 	_unConsumedFrameLength -= bytesToRead;
 	if(_unConsumedFrameLength == 0)
 	{
 		_pictureIsConsumed = true;
 	}
 
-	imagePacket -> incSeqNumber();
-
 	return true;
 }
 
 uint16_t Camera::getUnconsumedFrameLength() {
 	return _unConsumedFrameLength;
+}
+
+bool Camera::isPictureConsumed() {
+	return _pictureIsConsumed;
 }

@@ -1,8 +1,10 @@
 #include "ImagePacket.h"
+#include "TelemetryPacket.h"
 
+#include "PacketTypes.h"
 
 ImagePacket::ImagePacket() {
-
+	_teamId = TEAM_ID;
 }
 
 void ImagePacket::incSeqNumber() {
@@ -29,4 +31,26 @@ uint8_t ImagePacket::getImageDataByte(int16_t bytePos) {
 	}
 
 	return _imageData[bytePos];
+}
+
+uint16_t ImagePacket::toBinary(uint8_t* imagePacketBinaryBuffer, int16_t bufferSize)
+{
+	//Write image packet header
+	imagePacketBinaryBuffer[0] = _teamId >> 8;
+	imagePacketBinaryBuffer[1] = _teamId & 0x00FF;
+	imagePacketBinaryBuffer[2] = IMAGE_PACKET_TYPE;
+
+	imagePacketBinaryBuffer[3] = _imageDataLength >> 8;
+	imagePacketBinaryBuffer[4] = _imageDataLength & 0x00FF;
+
+	uint16_t bytesWritten = 5;
+
+	for(int i=0 ; i < _imageDataLength; i++)
+	{
+		imagePacketBinaryBuffer[i + bytesWritten] = _imageData[i]; 
+	}
+
+	bytesWritten += _imageDataLength;
+	return bytesWritten;
+
 }

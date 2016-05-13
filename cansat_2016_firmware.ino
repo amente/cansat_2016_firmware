@@ -10,20 +10,23 @@
 #include "command/CommandProcessor.h"
 
 //#define DEBUG_TELEMETRY
-#define DEBUG_INCOMING_PACKET
+//#define DEBUG_INCOMING_PACKET
 #define DEBUG_CAMERA_TAKE_PICTURE
 #define DEBUG_GROUND_STATION_COMMAND
 #define DEBUG_RESET_CAMERA
 
 
 #define TELEMETRY_DATA_CSV_BUF_SIZE   200
+#define IMAGE_DATA_BINARY_BUF_SIZE   200
 #define DATA_RECEIVE_BUF_SIZE  200
  
 #define TELEMETRY_SEND_INTERVAL_MICROS 1000000
 #define XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS 10
+#define PICTURED_DATA_SEND_INTERVAL_MICROS 100000
 
 
 uint8_t telemetryDataCsvBuffer[TELEMETRY_DATA_CSV_BUF_SIZE]; //Buffer for CSV telemetry data
+uint8_t imageDataBinaryBuffer[IMAGE_DATA_BINARY_BUF_SIZE]; //Buffer for image data
 
 XBee xbee = XBee(); //Driver module for XBee
 Debugger debugger = Debugger(); //Used for printing debug info
@@ -31,6 +34,7 @@ Debugger debugger = Debugger(); //Used for printing debug info
 //NOTE: Teensy 3.0 allows for upto 4 interval timers
 IntervalTimer telemetrySendTimer; //Used for sending telemetry at specified interval
 IntervalTimer xbeeDataReceiveTimer; //Used for receiving data from XBee
+IntervalTimer pictureSenderTimer; // Used for sending picture through XBee
 
 TelemetryPacket telemetryPacket = TelemetryPacket();
 
@@ -45,6 +49,10 @@ CommandProcessor commandProcessor;
 bool outgoingPacketIsSent = false;
 bool hasIncomingPacket = false;
 bool hasGroundStationCommand = false;
+bool telemetryIsSending = false;
+
+bool pictureSendingHasFinished = false;
+bool pictureSendingHasStarted = false;
 
 uint8_t groundStationCommand = 0x00;
 
@@ -54,10 +62,35 @@ uint8_t groundStationCommand = 0x00;
  */
 void sendTelemetry()
 {
+  telemetryIsSending = true;
+  
   int telemetryDataCsvSize = telemetryPacket.toCsv(telemetryDataCsvBuffer); 
   outgoingPacket.prepare(telemetryDataCsvBuffer,telemetryDataCsvSize); 
   xbee.send(outgoingPacket);
   outgoingPacketIsSent = true;
+  
+  telemetryIsSending = false;
+}
+
+void sendPicture()
+{
+  if(telemetryIsSending)
+  {
+    return;
+  }
+
+  if(!camera.isPictureConsumed())
+  {
+    camera.readPictureChunk(&imagePacket);
+    uint16_t imageDataBinarySize = imagePacket.toBinary(imageDataBinaryBuffer, IMAGE_DATA_BINARY_BUF_SIZE);
+    outgoingPacket.prepare(imageDataBinaryBuffer,imageDataBinarySize); 
+    xbee.send(outgoingPacket);
+    outgoingPacketIsSent = true;
+  }
+  else if(pictureSendingHasStarted)
+  {
+    pictureSendingHasFinished = true;
+  }
 }
 
 void actionAfterOutgoingPacketIsSent()
@@ -68,6 +101,11 @@ void actionAfterOutgoingPacketIsSent()
   noInterrupts();
   outgoingPacketIsSent = false;
   interrupts();
+
+  if(pictureSendingHasStarted && pictureSendingHasFinished)
+  {
+    Serial.print("Picture sending has finished !");
+  }
 }
 
 /**
@@ -112,7 +150,10 @@ void processGroundStationCommand()
 void takeImageCommandHandler()
 {
   bool takePictureIsSuccess = camera.takePicture();
-  
+  if(takePictureIsSuccess)
+  {
+    pictureSendingHasStarted = true;
+  }
   #ifdef DEBUG_CAMERA_TAKE_PICTURE
     debugger.debugTakeImage(&camera, takePictureIsSuccess);
   #endif 
@@ -148,7 +189,8 @@ void setup() {
   //Enable timed tasks
   telemetrySendTimer.begin(sendTelemetry, TELEMETRY_SEND_INTERVAL_MICROS); 
   xbeeDataReceiveTimer.begin(receiveIncomingPacket, XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS); 
-
+  pictureSenderTimer.begin(sendPicture, PICTURED_DATA_SEND_INTERVAL_MICROS); 
+    
    Serial.begin(9600);
 }
 
@@ -173,5 +215,5 @@ void loop() {
     processGroundStationCommand();
   }
   
-  delay(1000);
+  delay(500);
 }

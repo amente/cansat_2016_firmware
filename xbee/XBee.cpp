@@ -84,6 +84,8 @@ void XBee::receive(XBeeIncomingPacket* incomingPacket) {
 		{
 			uint8_t incomingByte = XBEE_SERIAL.read();
 
+			//TODO: Clean up parsing indexes
+
 			if(_frameParsingHasStarted)
 			{
 

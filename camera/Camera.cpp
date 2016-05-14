@@ -2,8 +2,8 @@
 
 #include <Adafruit_VC0706.h>
 
-SoftwareSerial cameraconnection = SoftwareSerial(7, 8);
-Adafruit_VC0706 adafruitCam = Adafruit_VC0706(&cameraconnection);
+//SoftwareSerial cameraconnection = SoftwareSerial(7, 8);
+Adafruit_VC0706 adafruitCam = Adafruit_VC0706(&CAMERA_SERIAL);
 
 Camera::Camera() {
 	

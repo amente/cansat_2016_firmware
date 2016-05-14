@@ -15,7 +15,7 @@ int16_t ImagePacket::getSeqNumber() {
 	return _seqNumber;
 }
 
-void ImagePacket::setImageDataLength(uint8_t imageDataLength) {
+void ImagePacket::setImageDataLength(uint16_t imageDataLength) {
 	_imageDataLength = imageDataLength;
 }
 

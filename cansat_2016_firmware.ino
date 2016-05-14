@@ -53,6 +53,7 @@ bool telemetryIsSending = false;
 
 bool pictureSendingHasFinished = false;
 bool pictureSendingHasStarted = false;
+bool lastPicturePacketSent = false;
 
 uint8_t groundStationCommand = 0x00;
 
@@ -90,6 +91,8 @@ void sendPicture()
   else if(pictureSendingHasStarted)
   {
     pictureSendingHasFinished = true;
+    lastPicturePacketSent = true;
+    pictureSenderTimer.end();
   }
 }
 
@@ -101,11 +104,15 @@ void actionAfterOutgoingPacketIsSent()
   noInterrupts();
   outgoingPacketIsSent = false;
   interrupts();
+}
 
-  if(pictureSendingHasStarted && pictureSendingHasFinished)
-  {
-    Serial.print("Picture sending has finished !");
-  }
+void actionAfterLastPicturePacketIsSent()
+{
+  noInterrupts();
+  lastPicturePacketSent = false;
+  interrupts();
+  
+  Serial.print("Picture sending has finished !");
 }
 
 /**
@@ -153,6 +160,7 @@ void takeImageCommandHandler()
   if(takePictureIsSuccess)
   {
     pictureSendingHasStarted = true;
+    pictureSenderTimer.begin(sendPicture, PICTURED_DATA_SEND_INTERVAL_MICROS); 
   }
   #ifdef DEBUG_CAMERA_TAKE_PICTURE
     debugger.debugTakeImage(&camera, takePictureIsSuccess);
@@ -189,8 +197,7 @@ void setup() {
   //Enable timed tasks
   telemetrySendTimer.begin(sendTelemetry, TELEMETRY_SEND_INTERVAL_MICROS); 
   xbeeDataReceiveTimer.begin(receiveIncomingPacket, XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS); 
-  pictureSenderTimer.begin(sendPicture, PICTURED_DATA_SEND_INTERVAL_MICROS); 
-    
+     
    Serial.begin(9600);
 }
 
@@ -213,6 +220,11 @@ void loop() {
   if(hasGroundStationCommand)
   {
     processGroundStationCommand();
+  }
+
+  if(lastPicturePacketSent)
+  {
+    actionAfterLastPicturePacketIsSent();
   }
   
   delay(500);

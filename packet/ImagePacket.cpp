@@ -4,19 +4,16 @@
 #include "PacketTypes.h"
 
 ImagePacket::ImagePacket() {
-	_teamId = TEAM_ID;
-}
-
-void ImagePacket::incSeqNumber() {
-	_seqNumber++;
-}
-
-int16_t ImagePacket::getSeqNumber() {
-	return _seqNumber;
+	_teamIdHigh = TEAM_ID_HIGH;
+	_teamIdLow = TEAM_ID_LOW;
 }
 
 void ImagePacket::setImageDataLength(uint16_t imageDataLength) {
 	_imageDataLength = imageDataLength;
+}
+
+void ImagePacket::setRemainingDataBytes(uint16_t numRemainingDataBytes) {
+	_numRemainingDataBytes = numRemainingDataBytes;
 }
 
 void ImagePacket::setImageDataByte(uint8_t value, int16_t bytePos) {
@@ -35,15 +32,25 @@ uint8_t ImagePacket::getImageDataByte(int16_t bytePos) {
 
 uint16_t ImagePacket::toBinary(uint8_t* imagePacketBinaryBuffer, int16_t bufferSize)
 {
+	// TODO: Refactor this
+
 	//Write image packet header
-	imagePacketBinaryBuffer[0] = _teamId >> 8;
-	imagePacketBinaryBuffer[1] = _teamId & 0x00FF;
-	imagePacketBinaryBuffer[2] = IMAGE_PACKET_TYPE;
+	imagePacketBinaryBuffer[0] = _teamIdHigh;
+	imagePacketBinaryBuffer[1] = _teamIdLow;
 
-	imagePacketBinaryBuffer[3] = _imageDataLength >> 8;
-	imagePacketBinaryBuffer[4] = _imageDataLength & 0x00FF;
+	//Mission time. 
+	imagePacketBinaryBuffer[2] = 0x00;
+	imagePacketBinaryBuffer[3] = 0x00;
+	imagePacketBinaryBuffer[4] = 0x00;
+	imagePacketBinaryBuffer[5] = 0x00;
 
-	uint16_t bytesWritten = 5;
+
+	imagePacketBinaryBuffer[6] = IMAGE_PACKET_TYPE;
+
+	imagePacketBinaryBuffer[7] = _numRemainingDataBytes >> 8;
+	imagePacketBinaryBuffer[8] = _numRemainingDataBytes & 0x00FF;
+
+	uint16_t bytesWritten = 9;
 
 	for(int i=0 ; i < _imageDataLength; i++)
 	{

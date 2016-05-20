@@ -12,6 +12,7 @@ Camera::Camera() {
 bool Camera::init() {
 	bool isCameraInitialized = adafruitCam.begin();
 	adafruitCam.setImageSize(VC0706_640x480);
+	adafruitCam.setBaud115200();
 	return isCameraInitialized;
 }
 
@@ -46,7 +47,6 @@ bool Camera::readPictureChunk(ImagePacket* imagePacket) {
 	{
 		return false;
 	}
-
 	
 	uint8_t bytesToRead = min(IMAGE_PACKET_DATA_SIZE, _unConsumedFrameLength);
 	uint8_t* cameraImageBuffer = adafruitCam.readPicture(bytesToRead);
@@ -58,13 +58,13 @@ bool Camera::readPictureChunk(ImagePacket* imagePacket) {
 
 	imagePacket -> setImageDataLength(bytesToRead);
 
-	imagePacket -> incSeqNumber();
-
 	_unConsumedFrameLength -= bytesToRead;
 	if(_unConsumedFrameLength == 0)
 	{
 		_pictureIsConsumed = true;
 	}
+
+	imagePacket -> setRemainingDataBytes(_unConsumedFrameLength);
 
 	return true;
 }

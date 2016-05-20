@@ -11,17 +11,16 @@ class ImagePacket
 public:
 	ImagePacket();
 
-	void incSeqNumber();
-	int16_t getSeqNumber();
-
 	void setImageDataLength(uint16_t imageDataLength);
+	void setRemainingDataBytes(uint16_t numRemainingDataBytes);
 	void setImageDataByte(uint8_t value, int16_t bytePos);
 	uint8_t getImageDataByte(int16_t bytePos);
 	uint16_t toBinary(uint8_t* imagePacketBinaryBuffer, int16_t bufferSize);
 
 private:
-	uint16_t _teamId;
-	int16_t _seqNumber;
+	uint8_t _teamIdHigh;
+	uint8_t _teamIdLow;
+	int16_t _numRemainingDataBytes;
 	uint16_t _imageDataLength;
 	uint8_t _imageData[IMAGE_PACKET_DATA_SIZE];
 	

@@ -4,7 +4,8 @@
 #include <inttypes.h>
 #include "../gps/GPSData.h"
 
-#define TEAM_ID 6825
+#define TEAM_ID_HIGH 0x68
+#define TEAM_ID_LOW  0x25
 
 class TelemetryPacket
 {
@@ -22,7 +23,8 @@ public:
   int toCsv(uint8_t* csvBuffer);
 
 private:
-  int16_t _teamId;
+  uint8_t _teamIdHigh;
+  uint8_t _teamIdLow;
   int16_t _missionTime;
   float _altitude;
   float _pressure;

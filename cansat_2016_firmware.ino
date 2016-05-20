@@ -22,7 +22,7 @@
  
 #define TELEMETRY_SEND_INTERVAL_MICROS 1000000
 #define XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS 10
-#define PICTURED_DATA_SEND_INTERVAL_MICROS 100000
+#define PICTURED_DATA_SEND_INTERVAL_MICROS 150000
 
 
 uint8_t telemetryDataCsvBuffer[TELEMETRY_DATA_CSV_BUF_SIZE]; //Buffer for CSV telemetry data
@@ -157,6 +157,7 @@ void processGroundStationCommand()
 void takeImageCommandHandler()
 {
   bool takePictureIsSuccess = camera.takePicture();
+  //delay(10000);
   if(takePictureIsSuccess)
   {
     pictureSendingHasStarted = true;

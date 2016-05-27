@@ -6,23 +6,26 @@
 #include "debugger/Debugger.h"
 #include "packet/TelemetryPacket.h"
 #include "camera/Camera.h"
+#include "bmp180/bmp180.h"
+#include "gps/GPS.h"
 #include "packet/ImagePacket.h"
 #include "command/CommandProcessor.h"
 
-//#define DEBUG_TELEMETRY
+#define DEBUG_TELEMETRY
 //#define DEBUG_INCOMING_PACKET
 #define DEBUG_CAMERA_TAKE_PICTURE
 #define DEBUG_GROUND_STATION_COMMAND
 #define DEBUG_RESET_CAMERA
 
 
-#define TELEMETRY_DATA_CSV_BUF_SIZE   200
+#define TELEMETRY_DATA_CSV_BUF_SIZE   500
 #define IMAGE_DATA_BINARY_BUF_SIZE   200
 #define DATA_RECEIVE_BUF_SIZE  200
  
 #define TELEMETRY_SEND_INTERVAL_MICROS 1000000
-#define XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS 10
-#define PICTURED_DATA_SEND_INTERVAL_MICROS 150000
+#define XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS 1000000
+#define PICTURED_DATA_SEND_INTERVAL_MICROS 200000
+#define GPS_DATA_READ_INTERVAL_MICROS 1000
 
 
 uint8_t telemetryDataCsvBuffer[TELEMETRY_DATA_CSV_BUF_SIZE]; //Buffer for CSV telemetry data
@@ -30,11 +33,13 @@ uint8_t imageDataBinaryBuffer[IMAGE_DATA_BINARY_BUF_SIZE]; //Buffer for image da
 
 XBee xbee = XBee(); //Driver module for XBee
 Debugger debugger = Debugger(); //Used for printing debug info
+GPS gps = GPS();
 
 //NOTE: Teensy 3.0 allows for upto 4 interval timers
 IntervalTimer telemetrySendTimer; //Used for sending telemetry at specified interval
 IntervalTimer xbeeDataReceiveTimer; //Used for receiving data from XBee
 IntervalTimer pictureSenderTimer; // Used for sending picture through XBee
+IntervalTimer gpsUpdateTimer; //Used for reading data from the GPS serial port
 
 TelemetryPacket telemetryPacket = TelemetryPacket();
 
@@ -43,6 +48,8 @@ XBeeOutgoingPacket outgoingPacket = XBeeOutgoingPacket();
 
 Camera camera = Camera();
 ImagePacket imagePacket = ImagePacket();
+
+Bmp180 bmp180 = Bmp180();
 
 CommandProcessor commandProcessor;
 
@@ -64,7 +71,8 @@ uint8_t groundStationCommand = 0x00;
 void sendTelemetry()
 {
   telemetryIsSending = true;
-  
+ 
+  readSensors(&telemetryPacket);
   int telemetryDataCsvSize = telemetryPacket.toCsv(telemetryDataCsvBuffer); 
   outgoingPacket.prepare(telemetryDataCsvBuffer,telemetryDataCsvSize); 
   xbee.send(outgoingPacket);
@@ -176,6 +184,26 @@ void resetCameraCommandHandler()
   camera.resetCamera();
 }
 
+void readSensors(TelemetryPacket* telemetryPacket)
+{
+  //Read altitude data
+  float altitude = bmp180.getAltitude();
+  float temperature = bmp180.getTemperature();
+  float pressure = bmp180.getPressure();
+  
+  telemetryPacket -> setAltitudeMeters(altitude);
+  telemetryPacket -> setTemperatureCelcius(temperature);
+  telemetryPacket -> setPressurePascals(pressure);  
+
+  //Read gps data
+  gps.readGPSData(&(telemetryPacket -> gpsData));  
+}
+
+void readGPSDataFromSerialPort()
+{
+  gps.readDataFromSerialPort();
+}
+
 void setup() {
   //Initialize modules and sensors
   //Initialize debugger
@@ -190,6 +218,11 @@ void setup() {
   camera.init();
   delay(3000);
 
+  //Initialize Altitude, Pressure and Temprature sensor 
+  bmp180.init();
+
+  //Initialize GPS
+  gps.init();
 
   //Initialize ground station command handlers
   commandProcessor.setTakeImageHandler(takeImageCommandHandler);
@@ -198,8 +231,9 @@ void setup() {
   //Enable timed tasks
   telemetrySendTimer.begin(sendTelemetry, TELEMETRY_SEND_INTERVAL_MICROS); 
   xbeeDataReceiveTimer.begin(receiveIncomingPacket, XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS); 
+  gpsUpdateTimer.begin(readGPSDataFromSerialPort, GPS_DATA_READ_INTERVAL_MICROS);
      
-   Serial.begin(9600);
+  Serial.begin(9600);
 }
 
 void loop() {

@@ -10,6 +10,7 @@
 #include "gps/GPS.h"
 #include "packet/ImagePacket.h"
 #include "command/CommandProcessor.h"
+#include "rtc/RTC.h"
 
 //#define DEBUG_TELEMETRY
 #define DEBUG_INCOMING_PACKET
@@ -50,6 +51,8 @@ Camera camera = Camera();
 ImagePacket imagePacket = ImagePacket();
 
 Bmp180 bmp180 = Bmp180();
+
+RTC rtc = RTC();
 
 CommandProcessor commandProcessor;
 
@@ -199,6 +202,11 @@ void readSensors(TelemetryPacket* telemetryPacket)
 
   //Read gps data
   gps.readGPSData(&(telemetryPacket -> gpsData));  
+
+  //Set the mission time
+  telemetryPacket -> setMissionTimeHr(rtc.getHour());
+  telemetryPacket -> setMissionTimeMin(rtc.getMin());
+  telemetryPacket -> setMissionTimeSec(rtc.getSec());
 }
 
 void readGPSDataFromSerialPort()
@@ -225,6 +233,9 @@ void setup() {
 
   //Initialize GPS
   gps.init();
+
+  //Initialize RTC
+  rtc.init();
 
   //Initialize ground station command handlers
   commandProcessor.setTakeImageHandler(takeImageCommandHandler);

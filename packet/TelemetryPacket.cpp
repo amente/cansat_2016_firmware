@@ -35,6 +35,10 @@ void TelemetryPacket::setMissionTimeSec(uint8_t missionTimeSec)
 	_missionTimeSec = missionTimeSec;
 }
 
+void TelemetryPacket::setMissionState(uint8_t missionState)
+{
+	_missionState = missionState;
+}
 
 void TelemetryPacket::setAltitudeMeters(float altitude) 
 {
@@ -179,7 +183,9 @@ int TelemetryPacket::toCsv(uint8_t* csvBuffer) {
 	csvBuffer[2] = _missionTimeHr;
 	csvBuffer[3] = _missionTimeMin;
 	csvBuffer[4] = _missionTimeSec; 
-	csvBuffer[5] = 0x00; //TODO:  This is no longer needed.
+
+	//Mission state
+	csvBuffer[5] = _missionState; 
 
 
 	csvBuffer[6] = TELEMETRY_PACKET_TYPE;

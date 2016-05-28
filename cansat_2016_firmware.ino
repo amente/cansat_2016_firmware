@@ -11,6 +11,7 @@
 #include "packet/ImagePacket.h"
 #include "command/CommandProcessor.h"
 #include "rtc/RTC.h"
+#include "mission/MissionState.h"
 
 //#define DEBUG_TELEMETRY
 #define DEBUG_INCOMING_PACKET
@@ -53,6 +54,7 @@ ImagePacket imagePacket = ImagePacket();
 Bmp180 bmp180 = Bmp180();
 
 RTC rtc = RTC();
+MissionState missionState = MissionState();
 
 CommandProcessor commandProcessor;
 
@@ -207,6 +209,10 @@ void readSensors(TelemetryPacket* telemetryPacket)
   telemetryPacket -> setMissionTimeHr(rtc.getHour());
   telemetryPacket -> setMissionTimeMin(rtc.getMin());
   telemetryPacket -> setMissionTimeSec(rtc.getSec());
+
+  missionState.updateAltitude(altitude);
+  //Add mission state to telemetryPacket
+  telemetryPacket -> setMissionState(missionState.getCurrentState());
 }
 
 void readGPSDataFromSerialPort()
@@ -218,6 +224,9 @@ void setup() {
   //Initialize modules and sensors
   //Initialize debugger
   debugger.init();
+
+  //Initialize mission state first
+  missionState.init();
   
   //Initialize XBee
   xbee.init();
@@ -245,7 +254,9 @@ void setup() {
   telemetrySendTimer.begin(sendTelemetry, TELEMETRY_SEND_INTERVAL_MICROS); 
   xbeeDataReceiveTimer.begin(receiveIncomingPacket, XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS); 
   gpsUpdateTimer.begin(readGPSDataFromSerialPort, GPS_DATA_READ_INTERVAL_MICROS);
-     
+
+  //TODO: When to start mission
+  
   Serial.begin(9600);
 }
 

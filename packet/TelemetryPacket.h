@@ -20,6 +20,7 @@ public:
   void setTemperatureCelcius(float temperature);
   void setVoltageVolts(float voltage);
   void setPacketCount(int16_t packetCount);
+  void setMissionState(uint8_t missionState);
   int toBinary(uint8_t* binaryBuffer);
   int toCsv(uint8_t* csvBuffer);
   GPSData gpsData;
@@ -30,6 +31,7 @@ private:
   uint8_t _missionTimeHr;
   uint8_t _missionTimeMin;
   uint8_t _missionTimeSec;
+  uint8_t _missionState;
   float _altitude;
   float _pressure;
   float _airSpeed;

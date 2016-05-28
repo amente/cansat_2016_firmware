@@ -74,6 +74,8 @@ void XBee::receive(XBeeIncomingPacket* incomingPacket) {
 	//Avoid overwriting a packet that was ready and not yet consumed
 	if(!incomingPacket -> isConsumed())
 	{
+		_incomingPacketFrameIndex = 0;
+		_frameParsingHasStarted = false;
 		return;
 	}
 

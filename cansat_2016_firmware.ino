@@ -11,8 +11,8 @@
 #include "packet/ImagePacket.h"
 #include "command/CommandProcessor.h"
 
-#define DEBUG_TELEMETRY
-//#define DEBUG_INCOMING_PACKET
+//#define DEBUG_TELEMETRY
+#define DEBUG_INCOMING_PACKET
 #define DEBUG_CAMERA_TAKE_PICTURE
 #define DEBUG_GROUND_STATION_COMMAND
 #define DEBUG_RESET_CAMERA
@@ -139,17 +139,19 @@ void processIncomingPacket()
     #ifdef DEBUG_INCOMING_PACKET
       debugger.debugIncomingPacket(&incomingPacket);
     #endif
-
-    if(incomingPacket.getFrameType() == XBEE_RECEIVE_PACKET_FRAME_TYPE)
-    {
-      //Incoming packet is transmitted by the ground station 
-      //Only expect one byte command
-      groundStationCommand = incomingPacket.getPacketDataByte(11);
-      hasGroundStationCommand = true;    
+    if(!incomingPacket.isConsumed())
+    { 
+        if(incomingPacket.getFrameType() == XBEE_RECEIVE_PACKET_FRAME_TYPE)
+        {
+          //Incoming packet is transmitted by the ground station 
+          //Only expect one byte command
+          groundStationCommand = incomingPacket.getPacketDataByte(11);
+          hasGroundStationCommand = true;    
+        }
+    
+        //Mark the packet as consumed
+        incomingPacket.setConsumedFlag(true);
     }
-
-    //Mark the packet as consumed
-    incomingPacket.setConsumedFlag(true);
 }
 
 void processGroundStationCommand()

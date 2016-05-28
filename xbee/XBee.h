@@ -4,7 +4,7 @@
 #include "HardwareSerial.h"
 
 #define XBEE_SERIAL Serial1
-#define XBEE_BAUD_RATE 115200
+#define XBEE_BAUD_RATE 230400
 
 
 #define XBEE_DEST_ADDR_HIGH_HH  0x00 

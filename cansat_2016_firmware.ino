@@ -297,7 +297,7 @@ void loop() {
     actionAfterLastPicturePacketIsSent();
   }
 
-  //Serial.println(shouldStartMission());
+  Serial.println(shouldStartMission());
 
   if(!missionStarted && shouldStartMission())
   {

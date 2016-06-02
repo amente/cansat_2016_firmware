@@ -63,6 +63,11 @@ void TelemetryPacket::setTemperatureCelcius(float temperature)
 int getNumDigits(int numberInt)
 {
 	int digits = 0;
+	
+	if(numberInt < 0)
+	{
+		numberInt *= -1;
+	}
 
 	if(numberInt == 0)
 	{
@@ -91,6 +96,7 @@ int floatToASCII(float numberFloat, int precesion, int destIndex,  uint8_t* buff
 	if(numberInt < 0)
 	{
 		buffer[destIndex] = '-';
+		numberInt *= -1;
 		destIndex ++;
 		numBytesWritten ++;
 	}

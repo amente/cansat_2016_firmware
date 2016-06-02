@@ -11,10 +11,10 @@
 #define LANDED_STATE 0xFF
 
 
-#define ASCENT_THRESHOLD	50
-#define DESCENT_THRESHOLD	20
-#define PAYLOAD_DEPLOYMENT_ALTITUDE	 400
-#define LANDED_THRESHOLD	10
+#define ASCENT_THRESHOLD	5
+#define DESCENT_THRESHOLD	5
+#define PAYLOAD_DEPLOYMENT_ALTITUDE 6	 
+#define LANDED_THRESHOLD	2
 
 #define MISSION_STARTED_SAVE_INDICATOR	0x42
 
@@ -27,6 +27,7 @@ public:
 	void updateAltitude(float currentAltitude);
 	bool shouldDeployPayload();
 	bool shouldStartBuzzer();
+	float getGroundAltitude();
 	void save();
 	uint8_t getCurrentState();
 

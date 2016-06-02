@@ -80,6 +80,7 @@ void MissionState::startMission(float groundAltitude) {
 }
 
 void MissionState::updateAltitude(float currentAltitude) {
+
 	// We first save the current altitude
 	_lastAltitude = _currentAltitude;
 
@@ -179,6 +180,10 @@ void MissionState::save() {
 
 uint8_t MissionState::getCurrentState() {
 	return _currentState;
+}
+
+float MissionState::getGroundAltitude() {
+	return _groundAltitude;
 }
 
 uint8_t MissionState::readMissionStartedIndicator() {

@@ -194,7 +194,7 @@ void resetCameraCommandHandler()
 void readSensors(TelemetryPacket* telemetryPacket)
 {
   //Read altitude data
-  float altitude = bmp180.getAltitude();
+  float altitude = bmp180.getAltitude() - missionState.getGroundAltitude();
   float temperature = bmp180.getTemperature();
   float pressure = bmp180.getPressure();
   
@@ -218,6 +218,12 @@ void readSensors(TelemetryPacket* telemetryPacket)
 void readGPSDataFromSerialPort()
 {
   gps.readDataFromSerialPort();
+}
+
+#define MISSION_JUMPER_PIN 16
+bool shouldStartMission()
+{
+  return digitalRead(MISSION_JUMPER_PIN);
 }
 
 void setup() {
@@ -256,9 +262,14 @@ void setup() {
   gpsUpdateTimer.begin(readGPSDataFromSerialPort, GPS_DATA_READ_INTERVAL_MICROS);
 
   //TODO: When to start mission
+  pinMode(MISSION_JUMPER_PIN, INPUT); 
   
   Serial.begin(9600);
 }
+
+volatile bool missionStarted = false;
+volatile bool payloadDeployed = false;
+volatile bool buzzerStarted = false;
 
 void loop() {
   //This part of the code will run repeatedely
@@ -285,6 +296,30 @@ void loop() {
   {
     actionAfterLastPicturePacketIsSent();
   }
+
+  //Serial.println(shouldStartMission());
+
+  if(!missionStarted && shouldStartMission())
+  {
+     Serial.println("Mission Started!");
+     float groundAltitude = bmp180.getAltitude();
+     missionState.startMission(groundAltitude);
+     missionStarted = true;  
+  }
+
+  if(!payloadDeployed && missionState.shouldDeployPayload())
+  {
+     Serial.println("Payload Deployed!");
+     payloadDeployed = true;
+  }
+
+  if(!buzzerStarted && missionState.shouldStartBuzzer())
+  {
+     Serial.println("Buzzer Started!");
+     buzzerStarted = true;  
+  }
+
+  
   
   delay(500);
 }

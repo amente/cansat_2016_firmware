@@ -76,6 +76,9 @@ void MissionState::startMission(float groundAltitude) {
 	// We start a mission on the LAUNCH PAD
 	_currentState = LAUNCH_PAD_STATE;
 	_groundAltitude = groundAltitude;
+	_currentAltitude = 0;
+	_apogeeAltitude = 0;
+	_lastAltitude = 0;
 	_missionStarted = true;
 }
 
@@ -107,7 +110,7 @@ void MissionState::computeStateTransition() {
 
 		case LAUNCH_PAD_STATE:
 			// We transition out of the launch pad state if we are above the ascent threshold altitude
-			if(_currentAltitude >= _groundAltitude + ASCENT_THRESHOLD)
+			if(_currentAltitude >= ASCENT_THRESHOLD)
 			{
 				_currentState = ASCENT_STATE;
 			}
@@ -132,7 +135,7 @@ void MissionState::computeStateTransition() {
 
 		case PAYLOAD_DEPLOYED_STATE:
 			// We transitions from payload deployed state when we are only the landed threshold above ground altitude
-			if(_currentAltitude <= _groundAltitude + LANDED_THRESHOLD)
+			if(_currentAltitude <= LANDED_THRESHOLD)
 			{
 				_currentState = LANDED_STATE;
 			}

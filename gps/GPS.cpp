@@ -51,4 +51,9 @@ void GPS::readDataFromSerialPort() {
 
 
 GPSData::GPSData() {
+	latitude = 0.0;
+	gpsAltitude = 0.0;
+	longitude = 0.0;
+	numberOfSat = 0;
+	gpsSpeed = 0;
 }

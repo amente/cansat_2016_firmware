@@ -8,6 +8,7 @@
 #define CURRENT_STATE_ADDRESS 1 // 1byte
 #define GROUND_ALTITUDE_ADDRESS 2 // 4 bytes
 #define APOGEE_ALTITUDE_ADDRESS 6 // 4 bytes
+#define PACKET_COUNT_ADDRESS 10 // 2 bytes
 
 
 MissionState::MissionState() {
@@ -69,6 +70,7 @@ void MissionState::init() {
 		_currentAltitude = 0;
 		_lastAltitude = 0;
 		_apogeeAltitude = 0;
+		_packetCount = 0;
 	}
 }
 
@@ -79,6 +81,7 @@ void MissionState::startMission(float groundAltitude) {
 	_currentAltitude = 0;
 	_apogeeAltitude = 0;
 	_lastAltitude = 0;
+	_packetCount = 0;
 	_missionStarted = true;
 }
 
@@ -187,6 +190,14 @@ uint8_t MissionState::getCurrentState() {
 
 float MissionState::getGroundAltitude() {
 	return _groundAltitude;
+}
+
+uint16_t MissionState::getPacketCount() {
+	return _packetCount;	
+}
+
+void  MissionState::incrementPacketCount() {
+	_packetCount++;
 }
 
 uint8_t MissionState::readMissionStartedIndicator() {

@@ -213,6 +213,10 @@ void readSensors(TelemetryPacket* telemetryPacket)
   missionState.updateAltitude(altitude);
   //Add mission state to telemetryPacket
   telemetryPacket -> setMissionState(missionState.getCurrentState());
+  missionState.incrementPacketCount();
+  uint16_t packetCount = missionState.getPacketCount();
+  telemetryPacket -> setPacketCount(packetCount);
+  
 }
 
 void readGPSDataFromSerialPort()

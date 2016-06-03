@@ -55,6 +55,10 @@ void TelemetryPacket::setAirSpeedKnots(float airSpeed)
 
 }
 
+void TelemetryPacket::setPacketCount(uint16_t packetCount) {
+	_packetCount = packetCount;
+}
+
 void TelemetryPacket::setTemperatureCelcius(float temperature)
 {
 	_temperature = temperature;

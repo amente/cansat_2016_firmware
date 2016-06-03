@@ -19,7 +19,7 @@ public:
   void setAirSpeedKnots(float airSpeed);
   void setTemperatureCelcius(float temperature);
   void setVoltageVolts(float voltage);
-  void setPacketCount(int16_t packetCount);
+  void setPacketCount(uint16_t packetCount);
   void setMissionState(uint8_t missionState);
   int toBinary(uint8_t* binaryBuffer);
   int toCsv(uint8_t* csvBuffer);
@@ -37,7 +37,7 @@ private:
   float _airSpeed;
   float _temperature;
   float _voltage;
-  int16_t _packetCount;
+  uint16_t _packetCount;
   int16_t _packetType;
 };
 

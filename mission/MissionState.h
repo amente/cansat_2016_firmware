@@ -28,6 +28,8 @@ public:
 	bool shouldDeployPayload();
 	bool shouldStartBuzzer();
 	float getGroundAltitude();
+	uint16_t getPacketCount();
+	void incrementPacketCount();
 	void save();
 	uint8_t getCurrentState();
 
@@ -39,6 +41,7 @@ private:
 	float _currentAltitude;
 	float _lastAltitude;
 	float _apogeeAltitude;
+	uint16_t _packetCount;
 
 	void computeStateTransition();
 

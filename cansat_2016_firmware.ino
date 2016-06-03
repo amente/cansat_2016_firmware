@@ -14,7 +14,7 @@
 #include "mission/MissionState.h"
 
 //#define DEBUG_TELEMETRY
-#define DEBUG_INCOMING_PACKET
+//#define DEBUG_INCOMING_PACKET
 #define DEBUG_CAMERA_TAKE_PICTURE
 #define DEBUG_GROUND_STATION_COMMAND
 #define DEBUG_RESET_CAMERA
@@ -25,7 +25,7 @@
 #define DATA_RECEIVE_BUF_SIZE  200
  
 #define TELEMETRY_SEND_INTERVAL_MICROS 1000000
-#define XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS 1000000
+#define XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS 10000
 #define PICTURED_DATA_SEND_INTERVAL_MICROS 25000
 #define GPS_DATA_READ_INTERVAL_MICROS 1000
 
@@ -66,6 +66,7 @@ bool telemetryIsSending = false;
 bool pictureSendingHasFinished = false;
 bool pictureSendingHasStarted = false;
 bool lastPicturePacketSent = false;
+bool hasImageAcknowledge = false;
 
 uint8_t groundStationCommand = 0x00;
 
@@ -148,14 +149,26 @@ void processIncomingPacket()
     { 
         if(incomingPacket.getFrameType() == XBEE_RECEIVE_PACKET_FRAME_TYPE)
         {
-          //Incoming packet is transmitted by the ground station 
-          //Only expect one byte command
-          groundStationCommand = incomingPacket.getPacketDataByte(11);
-          hasGroundStationCommand = true;    
+        
+          switch(incomingPacket.getPacketDataByte(11))
+          {
+            case 0xB0:
+               //Incoming packet is transmitted by the ground station 
+              //Only expect one byte command
+              groundStationCommand = incomingPacket.getPacketDataByte(12);
+              hasGroundStationCommand = true;    
+              incomingPacket.setConsumedFlag(true);
+              break;
+              
+            case 0xB1:
+              hasImageAcknowledge = true;
+               //Mark the packet as consumed
+              incomingPacket.setConsumedFlag(true);
+              break;
+          }       
         }
     
-        //Mark the packet as consumed
-        incomingPacket.setConsumedFlag(true);
+       
     }
 }
 
@@ -294,6 +307,16 @@ void loop() {
   if(hasGroundStationCommand)
   {
     processGroundStationCommand();
+  }
+
+  if(hasImageAcknowledge)
+  {
+    for(int i=0; i<incomingPacket.getPacketDataLength(); i++)
+    {
+      Serial.print(incomingPacket.getPacketDataByte(i), HEX);
+    }
+    Serial.println("");
+    hasImageAcknowledge = false;
   }
 
   if(lastPicturePacketSent)

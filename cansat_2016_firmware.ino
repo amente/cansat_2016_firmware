@@ -25,7 +25,7 @@
 #define DATA_RECEIVE_BUF_SIZE  200
  
 #define TELEMETRY_SEND_INTERVAL_MICROS 1000000
-#define XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS 10000
+#define XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS 1000
 #define PICTURED_DATA_SEND_INTERVAL_MICROS 25000
 #define GPS_DATA_READ_INTERVAL_MICROS 1000
 
@@ -156,19 +156,17 @@ void processIncomingPacket()
                //Incoming packet is transmitted by the ground station 
               //Only expect one byte command
               groundStationCommand = incomingPacket.getPacketDataByte(12);
-              hasGroundStationCommand = true;    
-              incomingPacket.setConsumedFlag(true);
+              hasGroundStationCommand = true;   
               break;
               
             case 0xB1:
               hasImageAcknowledge = true;
-               //Mark the packet as consumed
-              incomingPacket.setConsumedFlag(true);
+               //Mark the packet as consumed         
               break;
           }       
         }
     
-       
+       incomingPacket.setConsumedFlag(true);   
     }
 }
 
@@ -293,7 +291,8 @@ void loop() {
   noInterrupts();
   hasIncomingPacket = !incomingPacket.isConsumed(); //TODO: Fix the 'not' logic to make this more readable
   interrupts();
-
+  //Serial.print(hasIncomingPacket);
+  //Serial.println("");
   if(outgoingPacketIsSent)
   {
     actionAfterOutgoingPacketIsSent();
@@ -348,5 +347,5 @@ void loop() {
 
   
   
-  delay(500);
+  delay(100);
 }

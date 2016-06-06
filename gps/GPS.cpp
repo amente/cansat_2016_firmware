@@ -11,6 +11,7 @@ bool GPS::init() {
 
 	//Initialize GPS serial
 	adafruitGPS.begin(GPS_BAUD_RATE);
+	GPS_SERIAL.begin(GPS_BAUD_RATE);
 
 	// uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
   	adafruitGPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
@@ -22,6 +23,9 @@ bool GPS::init() {
 
   	// Request updates on antenna status, comment out to keep quiet: TODO: Is this really needed?
   	adafruitGPS.sendCommand(PGCMD_ANTENNA);
+
+
+
 
 	return true;
 }

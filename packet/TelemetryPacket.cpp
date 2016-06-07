@@ -52,7 +52,12 @@ void TelemetryPacket::setPressurePascals(float pressure)
 
 void TelemetryPacket::setAirSpeedKnots(float airSpeed)
 {
+	_airSpeed = airSpeed;
+}
 
+void TelemetryPacket::setVoltageVolts(float voltage)
+{
+	_voltage = voltage;
 }
 
 void TelemetryPacket::setPacketCount(uint16_t packetCount) {

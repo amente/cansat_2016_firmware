@@ -12,6 +12,7 @@
 #include "command/CommandProcessor.h"
 #include "rtc/RTC.h"
 #include "mission/MissionState.h"
+#include "pitot/pitot.h"
 
 //#define DEBUG_TELEMETRY
 //#define DEBUG_INCOMING_PACKET
@@ -55,6 +56,8 @@ Bmp180 bmp180 = Bmp180();
 
 RTC rtc = RTC();
 MissionState missionState = MissionState();
+
+Pitot pitot = Pitot();
 
 CommandProcessor commandProcessor;
 
@@ -202,6 +205,8 @@ void resetCameraCommandHandler()
   camera.resetCamera();
 }
 
+
+
 void readSensors(TelemetryPacket* telemetryPacket)
 {
   //Read altitude data
@@ -220,6 +225,14 @@ void readSensors(TelemetryPacket* telemetryPacket)
   telemetryPacket -> setMissionTimeHr(rtc.getHour());
   telemetryPacket -> setMissionTimeMin(rtc.getMin());
   telemetryPacket -> setMissionTimeSec(rtc.getSec());
+
+  //Read battery voltage, TODO: 
+  float voltage = ((float)analogRead(A0))/1024 * 3.3 * 3;
+  telemetryPacket -> setVoltageVolts(voltage);
+
+  //Read pitot sensor
+  float airSpeed = pitot.getAirSpeedMetersPerSec();
+  telemetryPacket -> setAirSpeedKnots(airSpeed);
 
   missionState.updateAltitude(altitude);
   //Add mission state to telemetryPacket
@@ -267,6 +280,9 @@ void setup() {
   //Initialize RTC
   rtc.init();
 
+  //Initialize Pitot
+  pitot.init();
+  
   //Initialize ground station command handlers
   commandProcessor.setTakeImageHandler(takeImageCommandHandler);
   commandProcessor.setResetCameraHandler(resetCameraCommandHandler);

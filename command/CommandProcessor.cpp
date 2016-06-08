@@ -20,6 +20,12 @@ void CommandProcessor::processForCommand(uint8_t command) {
 				_resetCameraCommandHandler();
 			}
 			break;
+		case COMMAND_DEPLOY_PAYLOAD:
+			if(_deployPayloadCommandHandler)
+			{
+				_deployPayloadCommandHandler();
+			}
+			break;
 		default:
 			if(_unknownCommandHandler)
 			{
@@ -35,6 +41,11 @@ void CommandProcessor::setTakeImageHandler(CommandHandlerFunction takeImageComma
 void CommandProcessor::setResetCameraHandler(CommandHandlerFunction resetCameraCommandHandler) {
 	_resetCameraCommandHandler = resetCameraCommandHandler;
 }
+
+void CommandProcessor::setDeployPayloadHandler(CommandHandlerFunction  deployPayloadCommandHandler) {
+	_deployPayloadCommandHandler = deployPayloadCommandHandler;
+}
+
 
 void CommandProcessor::setUnknownCommandHandler(CommandHandlerFunction unkownCommandHandler) {
 	_unknownCommandHandler = unkownCommandHandler;

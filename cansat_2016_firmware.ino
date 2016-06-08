@@ -29,6 +29,7 @@
 #define XBEE_INCOMING_DATA_RECEIVE_INTERVAL_MICROS 1000
 #define PICTURED_DATA_SEND_INTERVAL_MICROS 25000
 #define GPS_DATA_READ_INTERVAL_MICROS 1000
+#define NICHROME_BURN_INTERVAL_MICROS 500000
 
 
 uint8_t telemetryDataCsvBuffer[TELEMETRY_DATA_CSV_BUF_SIZE]; //Buffer for CSV telemetry data
@@ -72,6 +73,8 @@ bool lastPicturePacketSent = false;
 bool hasImageAcknowledge = false;
 
 uint8_t groundStationCommand = 0x00;
+
+bool payloadDeployedByCommand = false;
 
 /**
  * sendTelemetry
@@ -186,7 +189,6 @@ void processGroundStationCommand()
 void takeImageCommandHandler()
 {
   bool takePictureIsSuccess = camera.takePicture();
-  //delay(10000);
   if(takePictureIsSuccess)
   {
     pictureSendingHasStarted = true;
@@ -206,6 +208,43 @@ void resetCameraCommandHandler()
 }
 
 
+#define PAYLOAD_DEPLOY_PIN_1  12
+IntervalTimer burnTimer; //Used for burning the nichrome wire
+bool nichromeBurnStarted = false;
+bool nichromeBurnFinished = false;
+void burnNichrome()
+{
+  if(nichromeBurnStarted)
+  {
+    digitalWrite(PAYLOAD_DEPLOY_PIN_1, HIGH);
+    nichromeBurnStarted = false;
+  }
+  else
+  {
+    digitalWrite(PAYLOAD_DEPLOY_PIN_1, LOW);
+    nichromeBurnFinished = true;
+    burnTimer.end(); // This is just one shot
+    payloadDeployedByCommand = true;
+  }
+}
+
+void deployPayload()
+{
+    nichromeBurnStarted = true;
+    bool timerStartedSuccessfully = burnTimer.begin(burnNichrome, NICHROME_BURN_INTERVAL_MICROS);
+    if(!timerStartedSuccessfully)
+    {
+      //Safety !!! What if we are also sending picture. We only have 4 timers
+      //Most likely the resources are take by the picture send timer
+      pictureSenderTimer.end();
+      burnTimer.begin(burnNichrome, NICHROME_BURN_INTERVAL_MICROS);
+    }
+}
+
+void deployPayloadCommandHandler()
+{
+   deployPayload();
+}
 
 void readSensors(TelemetryPacket* telemetryPacket)
 {
@@ -227,7 +266,7 @@ void readSensors(TelemetryPacket* telemetryPacket)
   telemetryPacket -> setMissionTimeSec(rtc.getSec());
 
   //Read battery voltage, TODO: 
-  float voltage = ((float)analogRead(A0))/1024 * 3.3 * 3;
+  float voltage = ((float)analogRead(A0))/1023 * 3.3 * 3;
   telemetryPacket -> setVoltageVolts(voltage);
 
   //Read pitot sensor
@@ -286,6 +325,7 @@ void setup() {
   //Initialize ground station command handlers
   commandProcessor.setTakeImageHandler(takeImageCommandHandler);
   commandProcessor.setResetCameraHandler(resetCameraCommandHandler);
+  commandProcessor.setDeployPayloadHandler(deployPayloadCommandHandler);
   
   //Enable timed tasks
   telemetrySendTimer.begin(sendTelemetry, TELEMETRY_SEND_INTERVAL_MICROS); 
@@ -294,12 +334,16 @@ void setup() {
 
   //TODO: When to start mission
   pinMode(MISSION_JUMPER_PIN, INPUT); 
+
+  //Initialize payload deploy pin
+  pinMode(PAYLOAD_DEPLOY_PIN_1, OUTPUT);
+  digitalWrite(PAYLOAD_DEPLOY_PIN_1, LOW);
   
   Serial.begin(9600);
 }
 
 volatile bool missionStarted = false;
-volatile bool payloadDeployed = false;
+volatile bool payloadDeployedByMission = false;
 volatile bool buzzerStarted = false;
 
 void loop() {
@@ -349,10 +393,10 @@ void loop() {
      missionStarted = true;  
   }
 
-  if(!payloadDeployed && missionState.shouldDeployPayload())
+  if(!payloadDeployedByMission && missionState.shouldDeployPayload())
   {
      Serial.println("Payload Deployed!");
-     payloadDeployed = true;
+     payloadDeployedByMission = true;
   }
 
   if(!buzzerStarted && missionState.shouldStartBuzzer())
@@ -361,6 +405,11 @@ void loop() {
      buzzerStarted = true;  
   }
 
+  if(payloadDeployedByCommand)
+  {
+    Serial.println("Payload deployed!");
+    payloadDeployedByCommand = false;
+  }
   
   
   delay(100);

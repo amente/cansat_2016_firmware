@@ -207,30 +207,33 @@ void resetCameraCommandHandler()
   camera.resetCamera();
 }
 
-
-#define PAYLOAD_DEPLOY_PIN_1  12
+#define PAYLOAD_RELEASE_PIN_1  12
+#define PAYLOAD_RELEASE_PIN_2  21
 IntervalTimer burnTimer; //Used for burning the nichrome wire
 bool nichromeBurnStarted = false;
 bool nichromeBurnFinished = false;
+int currentReleasePin = PAYLOAD_RELEASE_PIN_1;
 void burnNichrome()
 {
-  if(nichromeBurnStarted)
+  if(!nichromeBurnStarted && !nichromeBurnFinished)
   {
-    digitalWrite(PAYLOAD_DEPLOY_PIN_1, HIGH);
-    nichromeBurnStarted = false;
+    digitalWrite(currentReleasePin, HIGH);
+    nichromeBurnStarted = true;
   }
   else
   {
-    digitalWrite(PAYLOAD_DEPLOY_PIN_1, LOW);
+    digitalWrite(currentReleasePin, LOW);
     nichromeBurnFinished = true;
     burnTimer.end(); // This is just one shot
     payloadDeployedByCommand = true;
   }
 }
 
-void deployPayload()
+void activateRelease(int releasePin)
 {
-    nichromeBurnStarted = true;
+    currentReleasePin = releasePin;
+    nichromeBurnStarted = false;
+    nichromeBurnFinished = false;
     bool timerStartedSuccessfully = burnTimer.begin(burnNichrome, NICHROME_BURN_INTERVAL_MICROS);
     if(!timerStartedSuccessfully)
     {
@@ -241,9 +244,22 @@ void deployPayload()
     }
 }
 
-void deployPayloadCommandHandler()
+void activateReleaseOneCommandHandler()
 {
-   deployPayload();
+  if(nichromeBurnStarted && !nichromeBurnFinished)
+  {
+    return;
+  }
+   activateRelease(PAYLOAD_RELEASE_PIN_1);
+}
+
+void activateReleaseTwoCommandHandler()
+{
+  if(nichromeBurnStarted && !nichromeBurnFinished)
+  {
+    return;
+  }
+   activateRelease(PAYLOAD_RELEASE_PIN_2);
 }
 
 void readSensors(TelemetryPacket* telemetryPacket)
@@ -325,7 +341,8 @@ void setup() {
   //Initialize ground station command handlers
   commandProcessor.setTakeImageHandler(takeImageCommandHandler);
   commandProcessor.setResetCameraHandler(resetCameraCommandHandler);
-  commandProcessor.setDeployPayloadHandler(deployPayloadCommandHandler);
+  commandProcessor.setActivateReleaseOneHandler(activateReleaseOneCommandHandler);
+  commandProcessor.setActivateReleaseTwoHandler(activateReleaseTwoCommandHandler);
   
   //Enable timed tasks
   telemetrySendTimer.begin(sendTelemetry, TELEMETRY_SEND_INTERVAL_MICROS); 
@@ -336,8 +353,11 @@ void setup() {
   pinMode(MISSION_JUMPER_PIN, INPUT); 
 
   //Initialize payload deploy pin
-  pinMode(PAYLOAD_DEPLOY_PIN_1, OUTPUT);
-  digitalWrite(PAYLOAD_DEPLOY_PIN_1, LOW);
+  pinMode(PAYLOAD_RELEASE_PIN_1, OUTPUT);
+  digitalWrite(PAYLOAD_RELEASE_PIN_1, LOW);
+
+  pinMode(PAYLOAD_RELEASE_PIN_2, OUTPUT);
+  digitalWrite(PAYLOAD_RELEASE_PIN_2, LOW);
   
   Serial.begin(9600);
 }
@@ -396,6 +416,9 @@ void loop() {
   if(!payloadDeployedByMission && missionState.shouldDeployPayload())
   {
      Serial.println("Payload Deployed!");
+     activateRelease(PAYLOAD_RELEASE_PIN_1);
+     delay(1000); // Activate the second release after 1 sec
+     activateRelease(PAYLOAD_RELEASE_PIN_2);
      payloadDeployedByMission = true;
   }
 

@@ -20,10 +20,16 @@ void CommandProcessor::processForCommand(uint8_t command) {
 				_resetCameraCommandHandler();
 			}
 			break;
-		case COMMAND_DEPLOY_PAYLOAD:
-			if(_deployPayloadCommandHandler)
+		case COMMAND_ACTIVATE_RELEASE_1:
+			if(_activateReleaseOneCommandHandler)
 			{
-				_deployPayloadCommandHandler();
+				_activateReleaseOneCommandHandler();
+			}
+			break;
+		case COMMAND_ACTIVATE_RELEASE_2:
+			if(_activateReleaseTwoCommandHandler)
+			{
+				_activateReleaseTwoCommandHandler();
 			}
 			break;
 		default:
@@ -42,8 +48,12 @@ void CommandProcessor::setResetCameraHandler(CommandHandlerFunction resetCameraC
 	_resetCameraCommandHandler = resetCameraCommandHandler;
 }
 
-void CommandProcessor::setDeployPayloadHandler(CommandHandlerFunction  deployPayloadCommandHandler) {
-	_deployPayloadCommandHandler = deployPayloadCommandHandler;
+void CommandProcessor::setActivateReleaseOneHandler(CommandHandlerFunction  activateReleaseOneCommandHandler) {
+	_activateReleaseOneCommandHandler = activateReleaseOneCommandHandler;
+}
+
+void CommandProcessor::setActivateReleaseTwoHandler(CommandHandlerFunction  activateReleaseTwoCommandHandler) {
+	_activateReleaseTwoCommandHandler = activateReleaseTwoCommandHandler;
 }
 
 

@@ -1,6 +1,7 @@
 #include "TelemetryPacket.h"
 #include "PacketTypes.h"
 #include "math.h"
+#include "WString.h"
 
 TelemetryPacket::TelemetryPacket() {
 	_teamIdHigh = TEAM_ID_HIGH;
@@ -68,125 +69,17 @@ void TelemetryPacket::setTemperatureCelcius(float temperature)
 {
 	_temperature = temperature;
 }
-
-int getNumDigits(int numberInt)
-{
-	int digits = 0;
-	
-	if(numberInt < 0)
-	{
-		numberInt *= -1;
-	}
-
-	if(numberInt == 0)
-	{
-		return 1;
-	}
-	else
-	{
-		while(numberInt > 0)
-		{
-			digits ++;
-			numberInt = numberInt/10;
-		}
-	}
-
-	return digits;	
-}
  
- 
-int floatToASCII(float numberFloat, int precesion, int destIndex,  uint8_t* buffer)
+int writeStringToBuffer(String theString, uint8_t* buffer, int startIndex)
 {
-	int numberInt = (int)(numberFloat * (float)pow(10.0,precesion));
-	int numIntDigits = getNumDigits(numberInt);
-
-	int numBytesWritten = 0;	
-
-	if(numberInt < 0)
+	int numBytesWritten = theString.length();
+	for(int i=0 ; i < numBytesWritten; i++)
 	{
-		buffer[destIndex] = '-';
-		numberInt *= -1;
-		destIndex ++;
-		numBytesWritten ++;
+		buffer[startIndex] = theString.charAt(i);
+		startIndex++;
 	}
-
-	int numBytesToWrite = numIntDigits + 1; //All digits + decimal point '.'
-	if(numberInt == 0)
-	{
-		numBytesToWrite = precesion + 2; // Number of 0's after decimal point, 0 before decimal point + the decimal point
-	}
-	int writeIndex = (destIndex + numBytesToWrite) - 1;
-
-
-	while(precesion > 0)
-	{
-		buffer[writeIndex] = (numberInt % 10) + '0';
-		numBytesWritten ++;
-		numberInt = numberInt/10;
-		precesion --;
-		writeIndex --;
-	}
-
-	//Write decimal point
-	buffer[writeIndex] = '.';
-	numBytesWritten ++;
-	writeIndex --;
-
-	while(writeIndex >= destIndex)
-	{
-		buffer[writeIndex] = (numberInt % 10) + '0';
-		numBytesWritten ++;
-		numberInt = numberInt/10;
-		writeIndex --;
-	}
-
-	return numBytesWritten;	
+	return numBytesWritten;
 }
-
-
-int intToASCII(int numberInt, int destIndex, uint8_t* buffer)
-{
-	int numBytesToWrite = 0;
-	int numberIntCopy = numberInt;
-	if(numberIntCopy < 0)
-	{
-		numBytesToWrite ++; //We need to write '-' sign
-		numberIntCopy *= -1; //Convert to positive
-	}
-	else if(numberIntCopy == 0)
-	{
-		numBytesToWrite = 1;
-	}
-	else
-	{
-		while(numberIntCopy > 0)
-		{
-			numBytesToWrite ++;
-			numberIntCopy = numberIntCopy/10;
-		}
-	}
-
-	
-	//Get the digits and write the number backwards
-	int writeIndex = (destIndex + numBytesToWrite) - 1;
-
-	if(numberInt < 0)
-	{
-		buffer[destIndex] = '-';
-		destIndex ++;
-	}
-	
-	while(writeIndex >= destIndex)
-	{
-		int digit = numberInt%10;
-		numberInt = numberInt/10;
-		buffer[writeIndex] = '0' + digit;
-		writeIndex --;
-	}
-
-	return numBytesToWrite;
-}
-
 
 int TelemetryPacket::toCsv(uint8_t* csvBuffer) {
 	//TODO:
@@ -207,77 +100,84 @@ int TelemetryPacket::toCsv(uint8_t* csvBuffer) {
 
 	int numBytesWritten = 7;
 
-	//TODO: This needs to be updated with proper data
-	//Write CSV of telemetry data to buffer
+	 /* <PACKET COUNT> (int) ,<ALT SENSOR> (float .x), <PRESSURE>(float .x),<SPEED>(float .x), <TEMP>(float .x),<VOLTAGE> (float .x),
+* <GPS LATITUDE>(double .xxxx) ,<GPSLONGITUDE> (double .xxxx) ,<GPS ALTITUDE> (flaot .x),<GPS SAT NUM>(int),<GPS SPEED>(float .x)*/
 
-	 /* <PACKET COUNT> (int) ,<ALT SENSOR> (float .x), <PRESSURE>(float .xx),<SPEED>(float .xx), <TEMP>(float .x),<VOLTAGE> (float .x),
-* <GPS LATITUDE>(double .xxxxxx) ,<GPSLONGITUDE> (double .xxxxxx) ,<GPS ALTITUDE> (flaot .x),<GPS SAT NUM>(int),<GPS SPEED>(float .xx)*/
-
-	//Packet count
-	numBytesWritten += intToASCII((int)_packetCount, numBytesWritten, csvBuffer);
+	//Packet Count
+	String pktCountStr = String(_packetCount);
+	numBytesWritten += writeStringToBuffer(pktCountStr, csvBuffer, numBytesWritten);
 
 	csvBuffer[numBytesWritten] = ',';
 	numBytesWritten ++;
 
 	//Altitude
-	numBytesWritten += floatToASCII((float)_altitude, 1, numBytesWritten, csvBuffer);
+	String altitudeStr = String(_altitude,1);
+	numBytesWritten += writeStringToBuffer(altitudeStr, csvBuffer, numBytesWritten);
+
+	csvBuffer[numBytesWritten] = ',';
+	numBytesWritten ++;
+
+    //Pressure
+	String pressureStr = String(_pressure,1);
+	numBytesWritten += writeStringToBuffer(pressureStr, csvBuffer, numBytesWritten);
+
+	csvBuffer[numBytesWritten] = ',';
+	numBytesWritten ++;
+
+	// Air Speed
+	String speedStr = String(_airSpeed,1);
+	numBytesWritten += writeStringToBuffer(speedStr, csvBuffer, numBytesWritten);
+
+	csvBuffer[numBytesWritten] = ',';
+	numBytesWritten ++;
+
+	// Temperature
+	String temperatureStr = String(_temperature,1);
+	numBytesWritten += writeStringToBuffer(temperatureStr, csvBuffer, numBytesWritten);
+
+	csvBuffer[numBytesWritten] = ',';
+	numBytesWritten ++;
+
+	// Voltage
+	String voltageStr = String(_voltage,1);
+	numBytesWritten += writeStringToBuffer(voltageStr, csvBuffer, numBytesWritten);
+
+	csvBuffer[numBytesWritten] = ',';
+	numBytesWritten ++;
+
+	// GPS Latitude
+	String gpsLatStr = String(gpsData.latitude,4);
+	numBytesWritten += writeStringToBuffer(gpsLatStr, csvBuffer, numBytesWritten);
 
 	csvBuffer[numBytesWritten] = ',';
 	numBytesWritten ++;
 
 
-	//Pressure
-	numBytesWritten += floatToASCII((float)_pressure, 2, numBytesWritten, csvBuffer);
+	// GPS Longitude
+	String gpsLongStr = String(gpsData.longitude,4);
+	numBytesWritten += writeStringToBuffer(gpsLongStr, csvBuffer, numBytesWritten);
 
 	csvBuffer[numBytesWritten] = ',';
 	numBytesWritten ++;
 
-	//Speed
-	numBytesWritten += floatToASCII((float)_airSpeed, 2, numBytesWritten, csvBuffer);
+	// GPS Altitude
+	String gpsAltStr = String(gpsData.gpsAltitude,4);
+	numBytesWritten += writeStringToBuffer(gpsAltStr, csvBuffer, numBytesWritten);
 
 	csvBuffer[numBytesWritten] = ',';
 	numBytesWritten ++;
 
-	//Temperature
-	numBytesWritten += floatToASCII((float)_temperature, 1, numBytesWritten, csvBuffer);
+	// GPS Sat Number
+	String gpsSatNumStr = String(gpsData.numberOfSat);
+	numBytesWritten += writeStringToBuffer(gpsSatNumStr, csvBuffer, numBytesWritten);
 
 	csvBuffer[numBytesWritten] = ',';
 	numBytesWritten ++;
 
-	//Voltage
-	numBytesWritten += floatToASCII((float)_voltage, 1, numBytesWritten, csvBuffer);
+	// GPS Speed
+	String gpsSpeedStr = String(gpsData.gpsSpeed);
+	numBytesWritten += writeStringToBuffer(gpsSpeedStr, csvBuffer, numBytesWritten);
 
- 	csvBuffer[numBytesWritten] = ',';
-	numBytesWritten ++;
-
-    //TODO: GPS Data
-	//GPS Latitude
-	numBytesWritten += floatToASCII(gpsData.latitude, 4, numBytesWritten, csvBuffer);
-
-	csvBuffer[numBytesWritten] = ',';
-	numBytesWritten ++;
-
-	//GPS Longitude
-	numBytesWritten += floatToASCII(gpsData.longitude, 4, numBytesWritten, csvBuffer);
-
-	csvBuffer[numBytesWritten] = ',';
-	numBytesWritten ++;
-
-	//GPS Altitude
-	numBytesWritten += floatToASCII(gpsData.gpsAltitude, 1, numBytesWritten, csvBuffer);
-
-	csvBuffer[numBytesWritten] = ',';
-	numBytesWritten ++;
-
-	//GPS Sat number
-	numBytesWritten += intToASCII(gpsData.numberOfSat, numBytesWritten, csvBuffer);
-
-	csvBuffer[numBytesWritten] = ',';
-	numBytesWritten ++;
-
-	//GPS speed
-	numBytesWritten += floatToASCII(gpsData.gpsSpeed, 2, numBytesWritten, csvBuffer); 
-
-	return numBytesWritten; //Remove the last comma
+	return numBytesWritten;
 }
 

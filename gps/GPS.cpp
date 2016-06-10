@@ -24,9 +24,6 @@ bool GPS::init() {
   	// Request updates on antenna status, comment out to keep quiet: TODO: Is this really needed?
   	adafruitGPS.sendCommand(PGCMD_ANTENNA);
 
-
-
-
 	return true;
 }
 
